@@ -1,5 +1,5 @@
 class ChatRoomsController < ApplicationController
-  before_action :set_chat_room, only: [:show, :edit, :update, :destroy]
+  before_action :set_chat_room, only: [:show, :edit, :update, :destroy,:user_admit_room,:chat,:user_exit_room]
   before_action :authenticate_user!, except: [:index]
         #  로그인 안했는데, 채팅방 못보게 해야함. (리스트만 볼 수 있게)
   
@@ -67,10 +67,33 @@ class ChatRoomsController < ApplicationController
 
 
   def user_admit_room
-
-      # 현재 유저가 있는 방에서 조인 버튼을 눌렀을 때, 들어가는 액션
-    @chat_room.user_admit_room(current_user)  
-
+    # 현재 유저가 있는 방에서 조인 버튼을 눌렀을 때, 들어가는 액션
+    # 이미 조인되어있는 유저라면?
+    # 이미 참가한 방입니다. 라고 alert를 띄워주고 
+    # 아닐 경우에는 참가 시킨다.
+    # => 유저가 참가하고 있는 방의 목록중에 방이 포함 되어있나?
+    # => 방에 참가하고 있는 유저들 중에 이 유저가 포함되어있나?
+    # current_user.chat_rooms.where(params[id])[0]
+    # current_user.chat_rooms --> 배열 형태임 따라서 array의 메서드 중에 include를 사용할 수도 있다.
+    # current_user.chat_rooms.include?(@chat_room)
+    if current_user.joined_room?(@chat_room)
+        render js:"alert('이미 참여한 방입니다.');"
+    else
+        @chat_room.user_admit_room(current_user)  
+    end
+    
+  end
+  
+  def chat
+    @chat_room.chatchats.create(user_id: current_user.id, message: params[:message])
+  end
+  
+  def user_exit_room
+    if @chat_room.master_id.eql?(current_user.email)
+       @chat_room.master_exit_room
+    else
+       @chat_room.user_exit_room(current_user)
+    end
   end
   
   private
